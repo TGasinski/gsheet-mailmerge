@@ -1,0 +1,48 @@
+# load packages
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pprint
+import pandas as pd
+import csv
+
+# connect to Gsheet
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('Desktop\\client_secret.json', scope)
+client = gspread.authorize(creds)
+
+# save Gsheet workbook 
+sheet = client.open('Practice Mass Emails').sheet1
+
+# save single Gsheet worksheet
+practice = sheet.get_all_records()
+
+# convert Gsheet to df
+practice_df = pd.DataFrame(practice)
+
+# save df as csv file
+practice_df.to_csv("practice_csv.csv", index = False)
+
+# import additional packages
+import smtplib, ssl
+
+# define terms 
+port = 465  # For SSL
+password = input("Type your password and press enter: ")
+sender_email = 't.gasinski.22@gmail.com'
+message = 'Subject: {Info1} . \nDear {Name}, \n\nI sent you a personalized email via Python! Your special message is: {Info2} \n\nBest, \nTheresa'
+
+# create a secure SSL context
+context = ssl.create_default_context()
+
+with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+    server.login(sender_email, password)
+    with open("practice_csv.csv") as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header row
+        for Email, Info1, Info2, Name in reader:
+            server.sendmail(
+                from_address,
+                Email,
+                message.format(Info1=Info1, Name=Name, Info2=Info2),
+            )
+    server.quit()
